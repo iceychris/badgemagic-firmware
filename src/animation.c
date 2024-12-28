@@ -259,7 +259,7 @@ static void laser_out(bm_t *bm, uint16_t *fb, int step, int frame)
 	}
 }
 
-static void still(bm_t *bm, uint16_t *fb, int frame)
+void still(bm_t *bm, uint16_t *fb, int frame)
 {
 	int i = frame * LED_COLS;
 	int j = 0;

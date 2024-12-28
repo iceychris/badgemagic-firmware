@@ -270,11 +270,11 @@ void spawn_tasks()
 {
 	common_taskid = TMOS_ProcessEventRegister(common_tasks);
 
-	tmos_start_reload_task(common_taskid, ANI_MARQUE, ANI_MARQUE_SPEED_T / 625);
-	tmos_start_reload_task(common_taskid, ANI_FLASH, ANI_FLASH_SPEED_T / 625);
+	// tmos_start_reload_task(common_taskid, ANI_MARQUE, ANI_MARQUE_SPEED_T / 625);
+	// tmos_start_reload_task(common_taskid, ANI_FLASH, ANI_FLASH_SPEED_T / 625);
 	tmos_start_reload_task(common_taskid, SCAN_BOOTLD_BTN, 
-				SCAN_BOOTLD_BTN_SPEED_T / 625);
-	tmos_start_task(common_taskid, ANI_NEXT_STEP, 500000 / 625);
+	 			SCAN_BOOTLD_BTN_SPEED_T / 625);
+	// tmos_start_task(common_taskid, ANI_NEXT_STEP, 500000 / 625);
 }
 
 void ble_start()
@@ -286,7 +286,7 @@ void ble_start()
 	tmos_stop_task(common_taskid, ANI_FLASH);
 	memset(fb, 0, sizeof(fb));
 
-	tmos_start_reload_task(common_taskid, BLE_NEXT_STEP, 500000 / 625);
+	// tmos_start_reload_task(common_taskid, BLE_NEXT_STEP, 500000 / 625);
 }
 
 void handle_mode_transition()
@@ -461,19 +461,20 @@ int main()
 	btn_onOnePress(KEY2, bm_transition);
 	btn_onLongPress(KEY1, change_brightness);
 
-	disp_charging();
+	// disp_charging();
 	
-	play_splash(&splash, 0, 0);
+	//play_splash(&splash, 0, 0);
 
-	load_bmlist();
+	//load_bmlist();
 
 	ble_setup();
 
+	ble_enable_advertise();
 	spawn_tasks();
 
 	mode = NORMAL;
 	while (1) {
-		handle_mode_transition();
+		// handle_mode_transition();
 		TMOS_SystemProcess();
 	}
 }
@@ -483,11 +484,14 @@ __HIGH_CODE
 void TMR0_IRQHandler(void)
 {
 	static int i;
+	static int f = 0;
 
 	if (TMR0_GetITFlag(TMR0_3_IT_CYC_END)) {
 		i += 1;
 		if (i >= LED_COLS) {
 			i = 0;
+			fb[0] = (f << 8) | f;
+			f++;
 		}
 		
 		if (i % 2) {

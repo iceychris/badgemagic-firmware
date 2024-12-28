@@ -11,12 +11,17 @@ static const uint16_t RxCharUUID = 0xFEE1;
 static uint8 RxCharProps = GATT_PROP_WRITE;
 static uint8 RxCharVal[16];
 
+extern volatile uint16_t fb[LED_COLS];
+
 static gattAttribute_t attr_table[] = {
 	ATTR_DECLAR(primaryServiceUUID, 2, GATT_PERMIT_READ, &service),
 
 	CHAR_DECLAR(&RxCharProps),
 	CHAR_VAL_DECLAR(&RxCharUUID, 2, GATT_PERMIT_WRITE, RxCharVal),
 };
+
+extern int ani_fixed(bm_t *bm, uint16_t *fb);
+extern void still(bm_t *bm, uint16_t *fb, int frame);
 
 static bStatus_t receive(uint8_t *val, uint16_t len)
 {
@@ -43,8 +48,24 @@ static bStatus_t receive(uint8_t *val, uint16_t len)
 	}
 
 	if (c > 2 && ((c+1) * LEGACY_TRANSFER_WIDTH) >= data_len) {
-		data_flatSave(data, data_len);
-		reset_jump();
+		// data_flatSave(data, data_len);
+		// reset_jump();
+		// for(uint16_t i = 0; i < 44; i++) {
+		// 	fb[i] = 0xfa5f;
+		// }
+		bm_t *bm = chunk2newbm(data + LEGACY_HEADER_SIZE, data_len - LEGACY_HEADER_SIZE);
+		bm->width = LED_COLS;
+
+		// ani_fixed(bm, fb);
+		still(bm, fb, 0);
+
+		free(bm->buf);
+		free(bm);
+
+		free(data);
+		data_len = 0;
+		c = 0;
+		return SUCCESS;
 	}
 
 	c++;
