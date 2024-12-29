@@ -11,9 +11,7 @@ static const uint16_t RxCharUUID = 0xFEE1;
 static uint8 RxCharProps = GATT_PROP_WRITE;
 static uint8 RxCharVal[16];
 
-extern volatile uint16_t fb1[LED_COLS];
-extern volatile uint16_t fb2[LED_COLS];
-extern volatile uint16_t *fb;
+extern volatile uint16_t fb[LED_COLS];
 
 static gattAttribute_t attr_table[] = {
 	ATTR_DECLAR(primaryServiceUUID, 2, GATT_PERMIT_READ, &service),

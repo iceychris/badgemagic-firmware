@@ -52,9 +52,8 @@ enum MODES {
 
 static tmosTaskID common_taskid = INVALID_TASK_ID ;
 
-volatile uint16_t fb1[LED_COLS] = {0};
-volatile uint16_t fb2[LED_COLS] = {0};
-volatile uint16_t *fb = fb1;
+volatile uint16_t fb[LED_COLS] = {0};
+
 volatile int mode, is_play_sequentially = 1, brightness = 0;
 
 __HIGH_CODE
@@ -487,7 +486,7 @@ void TMR0_IRQHandler(void)
 		
 		if (i % 2) {
 			if ((brightness + 1) % 2) 
-				leds_releaseall();
+			leds_releaseall();
 		} else {
 			led_write2dcol(i/2, fb[i], fb[i + 1]);
 		}
