@@ -467,6 +467,9 @@ int main()
 
 	//load_bmlist();
 
+	// set all pixels to on for debug (find crashes)
+	// memset(fb, 0xffff, sizeof(fb));
+
 	ble_setup();
 
 	ble_enable_advertise();
@@ -490,7 +493,7 @@ void TMR0_IRQHandler(void)
 		i += 1;
 		if (i >= LED_COLS) {
 			i = 0;
-			fb[0] = (f << 8) | f;
+			// fb[0] = (f << 8) | f;
 			f++;
 		}
 		

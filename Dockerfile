@@ -44,5 +44,8 @@ ENV PREFIX=/home/builder/mrs_toolchain/RISC-V_Embedded_GCC/bin/riscv-none-embed-
 
 RUN git config --global --add safe.directory /home/builder/workspace
 
+ENV USBC_VERSION=1
+ENV DEBUG=1
+
 # Default command to build the firmware
 CMD ["make"]
