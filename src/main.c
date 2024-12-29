@@ -53,7 +53,9 @@ enum MODES {
 
 static tmosTaskID common_taskid = INVALID_TASK_ID ;
 
-volatile uint16_t fb[LED_COLS] = {0};
+volatile uint16_t fb1[LED_COLS] = {0};
+volatile uint16_t fb2[LED_COLS] = {0};
+volatile uint16_t *fb = fb1;
 volatile int mode, is_play_sequentially = 1, brightness = 0;
 
 __HIGH_CODE

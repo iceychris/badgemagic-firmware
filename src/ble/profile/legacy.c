@@ -11,7 +11,9 @@ static const uint16_t RxCharUUID = 0xFEE1;
 static uint8 RxCharProps = GATT_PROP_WRITE;
 static uint8 RxCharVal[16];
 
-extern volatile uint16_t fb[LED_COLS];
+extern volatile uint16_t fb1[LED_COLS];
+extern volatile uint16_t fb2[LED_COLS];
+extern volatile uint16_t *fb;
 
 static gattAttribute_t attr_table[] = {
 	ATTR_DECLAR(primaryServiceUUID, 2, GATT_PERMIT_READ, &service),
@@ -20,7 +22,6 @@ static gattAttribute_t attr_table[] = {
 	CHAR_VAL_DECLAR(&RxCharUUID, 2, GATT_PERMIT_WRITE, RxCharVal),
 };
 
-extern int ani_fixed(bm_t *bm, uint16_t *fb);
 extern void still(bm_t *bm, uint16_t *fb, int frame);
 
 void write_error_code(uint16_t c, uint16_t data_len, uint16_t len, uint8_t code)
@@ -44,79 +45,28 @@ typedef struct {
 static transfer_state_t transfer_state = {0};
 
 /**
- * We expect to always receive packets that are each 16 bytes long.
+ * New Protocol:
+ * - 1 byte sequence number (valid values are 0-5)
+ * - 16 bytes payload to write at offset into fb
  */
 static bStatus_t receive(uint8_t *val, uint16_t len)
 {
-    if (len != LEGACY_TRANSFER_WIDTH) {
-        return ATT_ERR_INVALID_VALUE_SIZE;
+    if (len != 17) {
+        return ATT_ERR_INSUFFICIENT_KEY_SIZE;
     }
 
-    // First packet
-    if (transfer_state.counter == 0) {
-        if (memcmp(val, "wang\0\0", 6)) {
-            return ATT_ERR_INVALID_VALUE;
-        }
-        
-        // Initialize new transfer
-        transfer_state.data = malloc(sizeof(data_legacy_t));
-        if (!transfer_state.data) {
-            return ATT_ERR_INSUFFICIENT_RESOURCES;
-        }
+    uint8_t sequence_number = val[0];
+    if (sequence_number > 5) {
+        return ATT_ERR_INSUFFICIENT_KEY_SIZE;
     }
 
-    // Copy data safely
-    if (transfer_state.data) {
-        memcpy(transfer_state.data + transfer_state.counter * len, val, len);
-    } else {
-        return ATT_ERR_INSUFFICIENT_RESOURCES;
+    uint16_t offset = sequence_number * 16;
+    uint16_t bytes_to_write = 16;
+    if (sequence_number == 5) {
+        bytes_to_write = 8;
     }
 
-    // Second packet - calculate total size
-    if (transfer_state.counter == 1) {
-        data_legacy_t *d = (data_legacy_t *)transfer_state.data;
-		uint16_t sum_in_headers = bigendian16_sum(d->sizes, 8);
-		if (sum_in_headers > 16) {
-			return ATT_ERR_INVALID_VALUE;
-		}
-		transfer_state.total_size = sum_in_headers;
-        transfer_state.data_len = LEGACY_HEADER_SIZE + LED_ROWS * transfer_state.total_size;
-        
-        // Reallocate buffer for full data
-        uint8_t *new_data = realloc(transfer_state.data, transfer_state.data_len);
-        if (!new_data) {
-            free(transfer_state.data);
-            transfer_state.data = NULL;
-            transfer_state.counter = 0;
-            return ATT_ERR_INSUFFICIENT_RESOURCES;
-        }
-        transfer_state.data = new_data;
-    }
-
-    // Check if transfer complete
-    if (transfer_state.counter > 2 && 
-        ((transfer_state.counter + 1) * LEGACY_TRANSFER_WIDTH) >= transfer_state.data_len) {
-        
-        // Process received data
-        bm_t *bm = chunk2newbm(transfer_state.data + LEGACY_HEADER_SIZE, 
-                              transfer_state.data_len - LEGACY_HEADER_SIZE);
-        if (bm) {
-            still(bm, fb, 0);
-            free(bm->buf);
-            free(bm);
-        }
-
-        // Clean up
-        free(transfer_state.data);
-        transfer_state.data = NULL;
-        transfer_state.counter = 0;
-        transfer_state.data_len = 0;
-        transfer_state.total_size = 0;
-        
-        return SUCCESS;
-    }
-
-    transfer_state.counter++;
+    memcpy(fb + offset / 2, val + 1, bytes_to_write);
     return SUCCESS;
 }
 
