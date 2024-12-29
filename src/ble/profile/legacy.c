@@ -43,6 +43,9 @@ typedef struct {
 // Make transfer state per connection
 static transfer_state_t transfer_state = {0};
 
+/**
+ * We expect to always receive packets that are each 16 bytes long.
+ */
 static bStatus_t receive(uint8_t *val, uint16_t len)
 {
     if (len != LEGACY_TRANSFER_WIDTH) {
@@ -72,7 +75,11 @@ static bStatus_t receive(uint8_t *val, uint16_t len)
     // Second packet - calculate total size
     if (transfer_state.counter == 1) {
         data_legacy_t *d = (data_legacy_t *)transfer_state.data;
-        transfer_state.total_size = bigendian16_sum(d->sizes, 8);
+		uint16_t sum_in_headers = bigendian16_sum(d->sizes, 8);
+		if (sum_in_headers > 16) {
+			return ATT_ERR_INVALID_VALUE;
+		}
+		transfer_state.total_size = sum_in_headers;
         transfer_state.data_len = LEGACY_HEADER_SIZE + LED_ROWS * transfer_state.total_size;
         
         // Reallocate buffer for full data
@@ -94,7 +101,6 @@ static bStatus_t receive(uint8_t *val, uint16_t len)
         bm_t *bm = chunk2newbm(transfer_state.data + LEGACY_HEADER_SIZE, 
                               transfer_state.data_len - LEGACY_HEADER_SIZE);
         if (bm) {
-            bm->width = LED_COLS;
             still(bm, fb, 0);
             free(bm->buf);
             free(bm);
