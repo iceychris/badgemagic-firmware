@@ -28,7 +28,6 @@
 enum MODES {
 	BOOT = 0,
 	NORMAL,
-	DOWNLOAD,
 	POWER_OFF,
 	MODES_COUNT,
 };
@@ -298,20 +297,6 @@ void handle_mode_transition()
 
 	switch (mode)
 	{
-	case DOWNLOAD:
-		// Disable bitmap transition while in download mode
-		btn_onOnePress(KEY2, NULL);
-
-		// Take control of the current bitmap to display 
-		// the Bluetooth animation
-		ble_start();
-		while (mode == DOWNLOAD) {
-			TMOS_SystemProcess();
-		}
-		// If not being flashed, pressing KEY1 again will 
-		// make the badge goes off:
-		
-		// fallthrough
 	case POWER_OFF:
 		poweroff();
 		break;
@@ -463,14 +448,14 @@ int main()
 	btn_onOnePress(KEY2, bm_transition);
 	btn_onLongPress(KEY1, change_brightness);
 
-	// disp_charging();
+	disp_charging();
 	
 	//play_splash(&splash, 0, 0);
 
 	//load_bmlist();
 
-	// set all pixels to on for debug (find crashes)
-	// memset(fb, 0xffff, sizeof(fb));
+	// set all pixels to same value for debug (find crashes)
+	// memset(fb, 0xbeef, sizeof(fb));
 
 	ble_setup();
 
@@ -479,7 +464,7 @@ int main()
 
 	mode = NORMAL;
 	while (1) {
-		// handle_mode_transition();
+		handle_mode_transition();
 		TMOS_SystemProcess();
 	}
 }
@@ -495,6 +480,7 @@ void TMR0_IRQHandler(void)
 		i += 1;
 		if (i >= LED_COLS) {
 			i = 0;
+			// debug: binary counter
 			// fb[0] = (f << 8) | f;
 			f++;
 		}
