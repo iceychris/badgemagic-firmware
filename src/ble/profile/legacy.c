@@ -32,66 +32,86 @@ void write_error_code(uint16_t c, uint16_t data_len, uint16_t len, uint8_t code)
 	fb[LED_COLS - 1] = code;
 }
 
+// Add structure to hold transfer state
+typedef struct {
+    uint16_t counter;
+    uint16_t data_len;
+    uint16_t total_size;
+    uint8_t *data;
+} transfer_state_t;
+
+// Make transfer state per connection
+static transfer_state_t transfer_state = {0};
+
 static bStatus_t receive(uint8_t *val, uint16_t len)
 {
-	static uint16_t c, data_len, n;
-	static uint8_t *data;
-	if (len != LEGACY_TRANSFER_WIDTH) {
-		// write_error_code(c, data_len, len, ATT_ERR_INVALID_VALUE_SIZE);
-		return ATT_ERR_INVALID_VALUE_SIZE;
-	}
+    if (len != LEGACY_TRANSFER_WIDTH) {
+        return ATT_ERR_INVALID_VALUE_SIZE;
+    }
 
-	if (c == 0) {
-		if (memcmp(val, "wang\0\0", 6)) {
-			// write_error_code(c, data_len, len, ATT_ERR_INVALID_VALUE);
-			return ATT_ERR_INVALID_VALUE;
-		} else {
-			data = malloc(sizeof(data_legacy_t));
-		}
-	}
+    // First packet
+    if (transfer_state.counter == 0) {
+        if (memcmp(val, "wang\0\0", 6)) {
+            return ATT_ERR_INVALID_VALUE;
+        }
+        
+        // Initialize new transfer
+        transfer_state.data = malloc(sizeof(data_legacy_t));
+        if (!transfer_state.data) {
+            return ATT_ERR_INSUFFICIENT_RESOURCES;
+        }
+    }
 
-	memcpy(data + c * len, val, len);
+    // Copy data safely
+    if (transfer_state.data) {
+        memcpy(transfer_state.data + transfer_state.counter * len, val, len);
+    } else {
+        return ATT_ERR_INSUFFICIENT_RESOURCES;
+    }
 
-	if (c == 1) {
-		data_legacy_t *d = (data_legacy_t *)data;
-		n = bigendian16_sum(d->sizes, 8);
-		// fb[LED_COLS - 6] = d->sizes[0];
-		// fb[LED_COLS - 5] = n;
-		// DelayMs(65000u);
-		data_len = LEGACY_HEADER_SIZE + LED_ROWS * n;
-		data = realloc(data, data_len);
-	}
+    // Second packet - calculate total size
+    if (transfer_state.counter == 1) {
+        data_legacy_t *d = (data_legacy_t *)transfer_state.data;
+        transfer_state.total_size = bigendian16_sum(d->sizes, 8);
+        transfer_state.data_len = LEGACY_HEADER_SIZE + LED_ROWS * transfer_state.total_size;
+        
+        // Reallocate buffer for full data
+        uint8_t *new_data = realloc(transfer_state.data, transfer_state.data_len);
+        if (!new_data) {
+            free(transfer_state.data);
+            transfer_state.data = NULL;
+            transfer_state.counter = 0;
+            return ATT_ERR_INSUFFICIENT_RESOURCES;
+        }
+        transfer_state.data = new_data;
+    }
 
-	if (c > 2 && ((c+1) * LEGACY_TRANSFER_WIDTH) >= data_len) {
-		// uint32_t r = data_flatSave(data, data_len);
-		// reset_jump();
+    // Check if transfer complete
+    if (transfer_state.counter > 2 && 
+        ((transfer_state.counter + 1) * LEGACY_TRANSFER_WIDTH) >= transfer_state.data_len) {
+        
+        // Process received data
+        bm_t *bm = chunk2newbm(transfer_state.data + LEGACY_HEADER_SIZE, 
+                              transfer_state.data_len - LEGACY_HEADER_SIZE);
+        if (bm) {
+            bm->width = LED_COLS;
+            still(bm, fb, 0);
+            free(bm->buf);
+            free(bm);
+        }
 
-		bm_t *bm = chunk2newbm(data + LEGACY_HEADER_SIZE, data_len - LEGACY_HEADER_SIZE);
-		bm->width = LED_COLS;
+        // Clean up
+        free(transfer_state.data);
+        transfer_state.data = NULL;
+        transfer_state.counter = 0;
+        transfer_state.data_len = 0;
+        transfer_state.total_size = 0;
+        
+        return SUCCESS;
+    }
 
-		still(bm, fb, 0);
-
-		// (debug) write raw data directly to fb
-		// fb[0] = data_len;
-		// for(uint16_t i = 0; i < 43; i++) {
-		// 	if (i < data_len) {
-		// 		fb[i + 1] = data[i];
-		// 	} else {
-		// 		fb[i + 1] = 0;
-		// 	}
-		// }
-
-		free(bm->buf);
-		free(bm);
-
-		free(data);
-		data_len = 0;
-		c = 0;
-		return SUCCESS;
-	}
-
-	c++;
-	return SUCCESS;
+    transfer_state.counter++;
+    return SUCCESS;
 }
 
 static bStatus_t write_handler(uint16 connHandle, gattAttribute_t *pAttr,
