@@ -6,6 +6,10 @@ FROM ubuntu:20.04
 # Set non-interactive mode to avoid timezone prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Add build arguments for UID and GID
+ARG USER_UID=1000
+ARG USER_GID=1000
+
 # Install required dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -28,9 +32,9 @@ RUN wget http://file-oss.mounriver.com/tools/MRS_Toolchain_Linux_x64_V1.91.tar.x
     && mv MRS_Toolchain_Linux_x64_V1.91 /home/builder/mrs_toolchain \
     && rm MRS_Toolchain_Linux_x64_V1.91.tar.xz
 
-# Run as uid 502 and gid 20
+# Create runner user with provided UID/GID
 USER root
-RUN useradd -m -s /bin/bash runner -u 502 -g 20
+RUN useradd -m -s /bin/bash runner -u ${USER_UID} -g ${USER_GID}
 USER runner
 
 # Set the toolchain location in PATH

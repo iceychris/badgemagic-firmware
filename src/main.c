@@ -473,15 +473,11 @@ __HIGH_CODE
 void TMR0_IRQHandler(void)
 {
 	static int i;
-	static int f = 0;
 
 	if (TMR0_GetITFlag(TMR0_3_IT_CYC_END)) {
 		i += 1;
 		if (i >= LED_COLS) {
 			i = 0;
-			// debug: binary counter
-			// fb[0] = (f << 8) | f;
-			f++;
 		}
 		
 		if (i % 2) {

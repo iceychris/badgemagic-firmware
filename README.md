@@ -2,6 +2,20 @@
 
 Hardware details and information to build an open firmware for Bluetooth LED badges, compatible with [Badge Magic app](https://github.com/fossasia/badgemagic-android)
 
+## Modifications of this fork
+
+- Add a Docker-based workflow and `flash.sh` script to ease building and flashing the firmware
+
+    ```sh
+    bash flash.sh
+    ```
+
+- Default to `DEBUG=1` and `USBC_VERSION=1`
+
+- Increase the clock frequency to 80MHz
+
+- Simplify the bluetooth protocol and allow sending streaming full framebuffers over BLE while the device is on
+
 ## Installation
 
 Install [wchisp](https://github.com/ch32-rs/wchisp?tab=readme-ov-file#installing).
