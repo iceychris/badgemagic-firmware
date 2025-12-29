@@ -426,7 +426,7 @@ static void disp_charging()
 
 int main()
 {
-	SetSysClock(CLK_SOURCE_PLL_80MHz);
+	SetSysClock(CLK_SOURCE_PLL_60MHz);
 
 	debug_init();
 	PRINT("\nDebug console is on UART%d\n", DEBUG);
