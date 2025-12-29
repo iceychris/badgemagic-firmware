@@ -27,10 +27,13 @@ USER builder
 WORKDIR /home/builder/workspace
 
 # Download and install the MounRiver Toolchain
-RUN wget http://file-oss.mounriver.com/tools/MRS_Toolchain_Linux_x64_V1.91.tar.xz \
-    && tar -xf MRS_Toolchain_Linux_x64_V1.91.tar.xz \
-    && mv MRS_Toolchain_Linux_x64_V1.91 /home/builder/mrs_toolchain \
-    && rm MRS_Toolchain_Linux_x64_V1.91.tar.xz
+# NOTE: Update MRS_TOOLCHAIN_URL in .env as documented in README.md
+ARG MRS_TOOLCHAIN_URL
+RUN wget -O MRS_Toolchain_Linux_x64_V230.tar.xz "${MRS_TOOLCHAIN_URL}" \
+    && tar -xf MRS_Toolchain_Linux_x64_V230.tar.xz \
+    && mv Toolchain /home/builder/mrs_toolchain \
+    && mv /home/builder/mrs_toolchain/RISC-V\ Embedded\ GCC /home/builder/mrs_toolchain/RISC-V_Embedded_GCC \
+    && rm MRS_Toolchain_Linux_x64_V230.tar.xz
 
 # Create runner user with provided UID/GID
 USER root

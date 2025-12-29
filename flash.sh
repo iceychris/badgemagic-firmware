@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# load .env
+source .env
+
 # build container
-docker build --platform linux/amd64 --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t badgemagic-builder .
+docker build --platform linux/amd64 --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) --build-arg MRS_TOOLCHAIN_URL=${MRS_TOOLCHAIN_URL} -t badgemagic-builder .
 
 # start container if not already running
 if ! docker ps | grep -w "badgemagic-builder" > /dev/null 2>&1; then

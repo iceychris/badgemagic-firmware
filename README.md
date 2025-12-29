@@ -2,6 +2,19 @@
 
 Hardware details and information to build an open firmware for Bluetooth LED badges, compatible with [Badge Magic app](https://github.com/fossasia/badgemagic-android)
 
+## Prerequisites
+
+First you need to set the `MRS_TOOLCHAIN_URL` in the `.env` file.
+
+```sh
+cp .env.template .env
+```
+
+- Visit https://file.mounriver.com/download
+- Select "Linux"
+- Click on "Toolchain&Debugger" > "MRS_Toolchain_Linux_x64_V230.tar.xz"
+- In your browser download, click "Copy download URL" and paste it into your .env file as `MRS_TOOLCHAIN_URL`
+
 ## Modifications of this fork
 
 - Add a Docker-based workflow and `flash.sh` script to ease building and flashing the firmware
@@ -11,8 +24,6 @@ Hardware details and information to build an open firmware for Bluetooth LED bad
     ```
 
 - Default to `DEBUG=1` and `USBC_VERSION=1`
-
-- Increase the clock frequency to 80MHz
 
 - Simplify the bluetooth protocol and allow sending streaming full framebuffers over BLE while the device is on
 
